@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>お風呂チェック</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f7fa;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 20px 0;
+      font-size: 28px;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      border-radius: 20px;
+      padding: 30px;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      transition: 0.2s;
+      user-select: none;
+    }
+
+    .notyet {
+      background: #ffdddd;
+      color: #a33;
+    }
+
+    .done {
+      background: #d4f8d4;
+      color: #2a7;
+    }
+
+    .card:active {
+      transform: scale(0.95);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🛁 お風呂チェック</h1>
+<div id="app"></div>
+
+<script>
+  const members = ["母", "父", "兄", "弟"];
+  const RESET_HOUR = 5;
+
+  function getTodayKey() {
+    const now = new Date();
+    if (now.getHours() < RESET_HOUR) {
+      now.setDate(now.getDate() - 1);
+    }
+    return now.toISOString().split("T")[0];
+  }
+
+  function loadState() {
+    return JSON.parse(localStorage.getItem(getTodayKey())) || {};
+  }
+
+  function saveState(state) {
+    localStorage.setItem(getTodayKey(), JSON.stringify(state));
+  }
+
+  function render() {
+    const state = loadState();
+    const app = document.getElementById("app");
+    app.innerHTML = "";
+
+    members.forEach(name => {
+      const card = document.createElement("div");
+      const done = state[name];
+
+      card.className = "card " + (done ? "done" : "notyet");
+
+      card.innerHTML = `
+        ${name}
+        <div class="status">
+          ${done ? "✔ 入った" : "まだ"}
+        </div>
+      `;
+
+      card.onclick = () => {
+        state[name] = !state[name];
+        saveState(state);
+        render();
+      };
+
+      app.appendChild(card);
+    });
+  }
+
+  render();
+
+  setInterval(render, 60000);
+
+  function scheduleReload() {
+    const now = new Date();
+    const next = new Date();
+
+    next.setHours(RESET_HOUR, 0, 0, 0);
+    if (now >= next) {
+      next.setDate(next.getDate() + 1);
+    }
+
+    setTimeout(() => location.reload(), next - now);
+  }
+
+  scheduleReload();
+</script>
+
+</body>
+</html>
