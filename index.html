@@ -17,24 +17,30 @@
     }
 
     #app {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 20px;
       padding: 20px;
     }
 
     .card {
       border-radius: 20px;
-      padding: 30px;
-      font-size: 24px;
+      padding: 25px;
+      font-size: 28px;
       font-weight: bold;
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
       transition: 0.2s;
       user-select: none;
+      display: flex;
+      flex-direction: column;   /* ←縦並びに変更 */
+      justify-content: center;
+      align-items: center;      /* ←中央寄せ */
+
+      gap: 10px;
     }
 
     .notyet {
-      background: #ffdddd;
+      background: #ffe5e5;
       color: #a33;
     }
 
@@ -43,13 +49,16 @@
       color: #2a7;
     }
 
+    .icon {
+      font-size: 50px;
+    }
+
     .card:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
     }
 
     .status {
-      margin-top: 10px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: normal;
     }
   </style>
@@ -60,7 +69,7 @@
 <div id="app"></div>
 
 <script>
-  const members = ["母", "父", "兄", "弟"];
+  const members = ["母", "父", "兄"]; // ←弟削除
   const RESET_HOUR = 5;
 
   function getTodayKey() {
@@ -85,17 +94,22 @@
     app.innerHTML = "";
 
     members.forEach(name => {
-      const card = document.createElement("div");
       const done = state[name];
 
+      const card = document.createElement("div");
       card.className = "card " + (done ? "done" : "notyet");
 
-      card.innerHTML = `
-        ${name}
-        <div class="status">
-          ${done ? "✔ 入った" : "まだ"}
-        </div>
-      `;
+      const label = document.createElement("div");
+      label.textContent = name;
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      const status = document.createElement("div");
+      status.className = "status";
+      status.textContent = done ? "入浴済み 🛁" : "未入浴";
+
+      card.appendChild(label);
+      card.appendChild(status);
 
       card.onclick = () => {
         state[name] = !state[name];
