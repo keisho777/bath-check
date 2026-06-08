@@ -141,7 +141,7 @@
     // データなし
     if (Object.keys(yesterdayState).length === 0) {
       lastBatherElement.textContent =
-        "昨日最後：データなし";
+        "昨日の最後：データなし";
       return;
     }
 
@@ -152,7 +152,7 @@
 
     if (notDoneMembers.length > 0) {
       lastBatherElement.textContent =
-        `昨日最後：${notDoneMembers.join("、")}`;
+        `昨日の最後：${notDoneMembers.join("、")}`;
       return;
     }
 
@@ -175,10 +175,10 @@
 
     if (latestName) {
       lastBatherElement.textContent =
-        `昨日最後：${latestName}`;
+        `昨日の最後：${latestName}`;
     } else {
       lastBatherElement.textContent =
-        "昨日最後：不明";
+        "昨日の最後：不明";
     }
   }
 
@@ -191,7 +191,7 @@
     app.innerHTML = "";
 
     members.forEach(name => {
-      const done = state[name]?.done;
+      const done = state[name] && state[name].done;
 
       const card = document.createElement("div");
       card.className =
@@ -209,7 +209,7 @@
       card.appendChild(status);
 
       card.onclick = () => {
-        if (state[name]?.done) {
+        if (state[name] && state[name].done) {
           delete state[name];
         } else {
           state[name] = {
