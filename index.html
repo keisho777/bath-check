@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>お風呂チェック</title>
+
   <style>
     body {
       margin: 0;
@@ -12,8 +13,27 @@
     }
 
     h1 {
-      margin: 20px 0;
+      margin: 60px 0 20px;
       font-size: 28px;
+    }
+
+    #lastBather {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+
+      font-size: 14px;
+      font-weight: bold;
+
+      background: #fff8e1;
+      color: #b45309;
+
+      padding: 8px 12px;
+      border-radius: 999px;
+
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+      z-index: 1000;
     }
 
     #app {
@@ -31,10 +51,11 @@
       box-shadow: 0 6px 12px rgba(0,0,0,0.1);
       transition: 0.2s;
       user-select: none;
+
       display: flex;
-      flex-direction: column;   /* ←縦並びに変更 */
+      flex-direction: column;
       justify-content: center;
-      align-items: center;      /* ←中央寄せ */
+      align-items: center;
 
       gap: 10px;
     }
@@ -49,10 +70,6 @@
       color: #2a7;
     }
 
-    .icon {
-      font-size: 50px;
-    }
-
     .card:active {
       transform: scale(0.96);
     }
@@ -65,58 +82,142 @@
 </head>
 <body>
 
+<div id="lastBather"></div>
+
 <h1>🛁 お風呂チェック</h1>
+
 <div id="app"></div>
 
 <script>
   const members = ["母", "父", "兄"];
   const RESET_HOUR = 5;
 
-  function getTodayKey() {
-    const now = new Date();
-    if (now.getHours() < RESET_HOUR) {
-      now.setDate(now.getDate() - 1);
+  function getDateKey(offsetDays = 0) {
+    const date = new Date();
+
+    if (date.getHours() < RESET_HOUR) {
+      date.setDate(date.getDate() - 1);
     }
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
+
+    date.setDate(date.getDate() + offsetDays);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
   }
 
+  function getTodayKey() {
+    return getDateKey(0);
+  }
+
+  function getYesterdayKey() {
+    return getDateKey(-1);
+  }
+
   function loadState() {
-    return JSON.parse(localStorage.getItem(getTodayKey())) || {};
+    return JSON.parse(
+      localStorage.getItem(getTodayKey())
+    ) || {};
   }
 
   function saveState(state) {
-    localStorage.setItem(getTodayKey(), JSON.stringify(state));
+    localStorage.setItem(
+      getTodayKey(),
+      JSON.stringify(state)
+    );
+  }
+
+  function renderLastBather() {
+    const yesterdayState =
+      JSON.parse(
+        localStorage.getItem(getYesterdayKey())
+      ) || {};
+
+    const lastBatherElement =
+      document.getElementById("lastBather");
+
+    // データなし
+    if (Object.keys(yesterdayState).length === 0) {
+      lastBatherElement.textContent =
+        "昨日最後：データなし";
+      return;
+    }
+
+    // 押していない人
+    const notDoneMembers = members.filter(
+      name => !yesterdayState[name]
+    );
+
+    if (notDoneMembers.length > 0) {
+      lastBatherElement.textContent =
+        `昨日最後：${notDoneMembers.join("、")}`;
+      return;
+    }
+
+    // 全員押していた場合
+    let latestName = null;
+    let latestTime = 0;
+
+    members.forEach(name => {
+      const record = yesterdayState[name];
+
+      if (
+        record &&
+        record.time &&
+        record.time > latestTime
+      ) {
+        latestTime = record.time;
+        latestName = name;
+      }
+    });
+
+    if (latestName) {
+      lastBatherElement.textContent =
+        `昨日最後：${latestName}`;
+    } else {
+      lastBatherElement.textContent =
+        "昨日最後：不明";
+    }
   }
 
   function render() {
     const state = loadState();
+
+    renderLastBather();
+
     const app = document.getElementById("app");
     app.innerHTML = "";
 
     members.forEach(name => {
-      const done = state[name];
+      const done = state[name]?.done;
 
       const card = document.createElement("div");
-      card.className = "card " + (done ? "done" : "notyet");
+      card.className =
+        "card " + (done ? "done" : "notyet");
 
       const label = document.createElement("div");
       label.textContent = name;
 
-      const icon = document.createElement("div");
-      icon.className = "icon";
       const status = document.createElement("div");
       status.className = "status";
-      status.textContent = done ? "入浴済み 🛁" : "未入浴";
+      status.textContent =
+        done ? "入浴済み 🛁" : "未入浴";
 
       card.appendChild(label);
       card.appendChild(status);
 
       card.onclick = () => {
-        state[name] = !state[name];
+        if (state[name]?.done) {
+          delete state[name];
+        } else {
+          state[name] = {
+            done: true,
+            time: Date.now()
+          };
+        }
+
         saveState(state);
         render();
       };
@@ -133,12 +234,21 @@
     const now = new Date();
     const next = new Date();
 
-    next.setHours(RESET_HOUR, 0, 0, 0);
+    next.setHours(
+      RESET_HOUR,
+      0,
+      0,
+      0
+    );
+
     if (now >= next) {
       next.setDate(next.getDate() + 1);
     }
 
-    setTimeout(() => location.reload(), next - now);
+    setTimeout(
+      () => location.reload(),
+      next - now
+    );
   }
 
   scheduleReload();
